@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pengaturan Profil</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: #f5f5f5;
+  display: flex;
+  justify-content: center;
+}
+.phone {
+  width: 100%;
+  max-width: 400px;
+  height: 100vh;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+.header {
+  background: #2563eb;
+  color: white;
+  padding: 20px 16px;
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
+}
+.back-arrow {
+  font-size: 28px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: white;
+  font-weight: bold;
+  line-height: 1;
+}
+.header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.content {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+.card {
+  background: #f8fafc;
+  border-radius: 24px;
+  padding: 18px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: 1px solid #e2e8f0;
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.input-group {
+  margin-bottom: 16px;
+}
+.input-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #334155;
+}
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid #cbd5e1;
+  font-size: 15px;
+  background: white;
+}
+.input-group input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 40px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  transition: 0.2s;
+  margin-top: 8px;
+}
+.btn-primary {
+  background: #2563eb;
+  color: white;
+}
+.btn-secondary {
+  background: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+}
+.btn-danger {
+  background: #ef4444;
+  color: white;
+}
+.info-text {
+  font-size: 12px;
+  color: #475569;
+  margin-top: 8px;
+  text-align: center;
+}
+.status {
+  text-align: center;
+  font-size: 13px;
+  margin-top: 12px;
+  padding: 8px;
+  border-radius: 40px;
+}
+.status.success {
+  background: #dcfce7;
+  color: #166534;
+}
+.status.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+hr {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid #e2e8f0;
+}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="header">
+    <button class="back-arrow" id="backBtn">←</button>
+    <h2>Pengaturan</h2>
+  </div>
+  <div class="content">
+    <!-- Card Profil -->
+    <div class="card">
+      <div class="card-title">👤 Profil Saya</div>
+      <div class="input-group">
+        <label>Nama</label>
+        <input type="text" id="name" placeholder="Nama lengkap">
+      </div>
+      <div class="input-group">
+        <label>Username</label>
+        <input type="text" id="username" placeholder="Username">
+      </div>
+      <div class="input-group">
+        <label>Password Baru (kosongkan jika tidak diubah)</label>
+        <input type="password" id="password" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary" id="saveProfileBtn">Simpan Profil</button>
+    </div>
+
+    <!-- Card Cooldown Global -->
+    <div class="card">
+      <div class="card-title">⏱️ Cooldown Catat Keadaan</div>
+      <div class="input-group">
+        <label>Cooldown Notifikasi (menit)</label>
+        <input type="number" id="globalCooldown" step="1" min="1" max="1440" placeholder="30">
+      </div>
+      <div class="info-text">
+        Interval minimal Pencacatan amonia untuk setiap kolam.<br>
+        Nilai ini akan diterapkan ke SEMUA kolam Anda.
+      </div>
+      <button class="btn btn-primary" id="saveCooldownBtn">Terapkan ke Semua Kolam</button>
+    </div>
+
+    <!-- Tombol Logout -->
+    <button class="btn btn-danger" id="logoutBtn">🚪 Keluar / Logout</button>
+    
+    <div id="statusMessage" class="status" style="display: none;"></div>
+  </div>
+</div>
+
+<script src="scripts/helpers.js"></script>
+<script>
+  // Helper API dengan token (menggunakan makeApiRequest dari helpers.js)
+  async function apiRequest(endpoint, options = {}) {
+    try {
+      return await makeApiRequest(endpoint, options);
+    } catch (e) {
+      console.error('API Error:', e);
+      return null;
+    }
+  }
+
+  function showStatus(message, isError = false) {
+    const statusDiv = document.getElementById('statusMessage');
+    statusDiv.textContent = message;
+    statusDiv.className = `status ${isError ? 'error' : 'success'}`;
+    statusDiv.style.display = 'block';
+    setTimeout(() => {
+      if (statusDiv.textContent === message) {
+        statusDiv.style.display = 'none';
+      }
+    }, 3000);
+  }
+
+  // Load data user dari /me
+  async function loadUser() {
+    const data = await apiRequest('/me');
+    if (data && data.name) {
+      document.getElementById('name').value = data.name || '';
+      document.getElementById('username').value = data.username || '';
+    } else {
+      showStatus('Gagal memuat profil', true);
+    }
+  }
+
+  // Load cooldown global (ambil dari kolam pertama, asumsikan semua kolam punya cooldown sama? Bisa juga endpoint khusus)
+  async function loadGlobalCooldown() {
+    const dashboard = await apiRequest('/dashboard');
+    if (dashboard && Array.isArray(dashboard) && dashboard.length > 0) {
+      // Ambil cooldown dari kolam pertama (bisa berbeda, tapi user biasanya ingin set semua)
+      const cooldown = dashboard[0].cooldown_menit || 30;
+      document.getElementById('globalCooldown').value = cooldown;
+    } else {
+      document.getElementById('globalCooldown').value = 30;
+    }
+  }
+
+  // Simpan profil
+  async function saveProfile() {
+    const name = document.getElementById('name').value.trim();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    
+    if (!name || !username) {
+      showStatus('Nama dan Username tidak boleh kosong', true);
+      return;
+    }
+    
+    const payload = { name, username };
+    if (password !== '') payload.password = password;
+    
+    const result = await apiRequest('/user', {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+    
+    if (result && result.message) {
+      showStatus(result.message);
+      document.getElementById('password').value = ''; // clear password field
+    } else {
+      showStatus('Gagal menyimpan profil', true);
+    }
+  }
+
+  // Update cooldown global ke semua kolam
+  async function saveGlobalCooldown() {
+    const cooldown = parseInt(document.getElementById('globalCooldown').value, 10);
+    if (isNaN(cooldown) || cooldown < 1 || cooldown > 1440) {
+      showStatus('Cooldown harus antara 1 - 1440 menit', true);
+      return;
+    }
+    
+    const result = await apiRequest('/global-cooldown', {
+      method: 'PUT',
+      body: JSON.stringify({ cooldown_menit: cooldown })
+    });
+    
+    if (result && result.message) {
+      showStatus(result.message);
+    } else {
+      showStatus('Gagal mengupdate cooldown global', true);
+    }
+  }
+
+  // Logout
+  async function logout() {
+    await apiRequest('/logout', { method: 'POST' });
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = 'login.html';
+  }
+
+  // Event listeners
+  document.getElementById('backBtn').addEventListener('click', () => {
+    window.location.href = 'dashboard.html';
+  });
+  document.getElementById('saveProfileBtn').addEventListener('click', saveProfile);
+  document.getElementById('saveCooldownBtn').addEventListener('click', saveGlobalCooldown);
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+  
+  // Load data
+  loadUser();
+  loadGlobalCooldown();
+</script>
+</body>
+</html>

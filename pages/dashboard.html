@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dashboard Kolam</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: #f5f5f5;
+  display: flex;
+  justify-content: center;
+}
+.phone {
+  width: 100%;
+  max-width: 400px;
+  height: 100vh;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+  position: relative;
+}
+.header {
+  background: #2563eb;
+  color: white;
+  padding: 20px 20px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
+}
+.header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.header p {
+  font-size: 14px;
+  opacity: 0.9;
+}
+.header-icons {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.icon-wrapper {
+  position: relative;
+  display: inline-block;
+}
+.header-icons img {
+  width: 28px;
+  cursor: pointer;
+}
+.notif-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kolam-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 16px 90px;
+}
+.kolam-card {
+  background: #f8fafc;
+  border-radius: 28px;
+  padding: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  position: relative;
+  border: 1px solid #e2e8f0;
+}
+.kolam-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+.kolam-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.kolam-value-limit {
+  font-size: 14px;
+  color: #475569;
+  margin-top: 4px;
+}
+.btn-atur {
+  position: absolute;
+  top: -12px;
+  right: 20px;
+  background: #fef9c3;
+  border: 1px solid #eab308;
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #854d0e;
+}
+.badge-row {
+  display: flex;
+  gap: 12px;
+  margin: 12px 0 8px;
+  flex-wrap: wrap;
+}
+.badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+}
+.badge.aman { background: #22c55e; }
+.badge.bahaya { background: #ef4444; }
+.badge.auto { background: #8b5cf6; }
+.badge.manual { background: #64748b; }
+.badge.online { background: #22c55e; }
+.badge.offline { background: #94a3b8; }
+.info-box {
+  background: #f1f5f9;
+  border-radius: 16px;
+  padding: 10px 12px;
+  margin: 12px 0 8px;
+}
+.info-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+.info-time {
+  font-size: 12px;
+  color: #475569;
+  margin-top: 4px;
+}
+.pending-spinner {
+  font-size: 12px;
+  color: #e67e22;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(0,0,0,0.1);
+  border-radius: 50%;
+  border-top-color: #e67e22;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.perintah-card {
+  margin-top: 16px;
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 12px;
+}
+.perintah-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.perintah-item {
+  background: #fef9c3;
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.perintah-item .warning {
+  background: #eab308;
+  color: #422006;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+  margin-right: 8px;
+}
+.perintah-status {
+  font-size: 12px;
+  font-weight: 500;
+}
+.status-belum {
+  background: #f97316;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.status-pending {
+  background: #eab308;
+  color: #422006;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  max-width: 400px;
+  height: 70px;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+.nav-item {
+  cursor: pointer;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+.nav-item.active {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px #3b82f6);
+}
+.notif-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+.notif-box {
+  width: 90%;
+  max-width: 350px;
+  background: white;
+  border-radius: 24px;
+  padding: 20px;
+  position: relative;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.notif-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+/* Warna card notifikasi berdasarkan jenis */
+.notif-card {
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  border-left: 6px solid;
+  background: #f8fafc;
+}
+.notif-card.amonia { border-left-color: #ef4444; }
+.notif-card.device { border-left-color: #f97316; }
+.notif-card.pengurasan { border-left-color: #10b981; }
+.notif-card small {
+  font-size: 11px;
+  color: #64748b;
+}
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="header">
+    <h2>Selamat datang, <span id="userName">Petani</span></h2>
+    <p>Pantau kadar amonia kolam Anda</p>
+    <div class="header-icons">
+      <div class="icon-wrapper">
+        <img src="assets/bell.svg" id="bellIcon" alt="Notifikasi">
+        <span id="notifBadge" class="notif-badge hidden">0</span>
+      </div>
+      <img src="assets/settings.svg" id="settingIcon" alt="Pengaturan">
+    </div>
+  </div>
+  <div class="kolam-list" id="kolamContainer"></div>
+</div>
+<div class="bottom-nav">
+  <img class="nav-item" id="navDashboard" src="assets/tap.svg" alt="Dashboard">
+  <img class="nav-item" id="navHistory" src="assets/history.svg" alt="History">
+</div>
+<div id="notifOverlay" class="notif-overlay hidden">
+  <div class="notif-box">
+    <button class="notif-close" id="closeNotif">✕</button>
+    <div id="notifContainer"></div>
+  </div>
+</div>
+<script src="scripts/helpers.js"></script>
+<script>
+  const API_BASE = 'http://localhost:8000/api';
+  const kolamCards = new Map();
+
+  async function apiRequest(endpoint, options = {}) {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = 'login.html'; return null; }
+    return await makeApiRequest(endpoint, options);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  }
+
+  function isOnline(waktu) {
+    if (!waktu) return false;
+    return (new Date() - new Date(waktu)) < 5 * 60 * 1000;
+  }
+
+  function formatStatusPerintah(status) {
+    if (status === 'belum_dikirim') return '<span class="status-belum">⚠️ Belum Diterima</span>';
+    if (status === 'pending') return '<span class="status-pending">⏳ Diproses</span>';
+    return status;
+  }
+
+  // Fungsi untuk mendapatkan badge kelas dan border
+  function getJenisClass(jenis) {
+    switch(jenis) {
+      case 'amonia': return 'amonia';
+      case 'device': return 'device';
+      case 'pengurasan': return 'pengurasan';
+      default: return 'amonia';
+    }
+  }
+
+  async function loadUser() {
+    const data = await apiRequest('/me');
+    if (data?.name) document.getElementById('userName').innerText = data.name;
+  }
+
+  // Load jumlah notifikasi belum dibaca
+  async function loadNotifCount() {
+    const data = await apiRequest('/notifikasi?dibaca=false&limit=1');
+    if (data && data.total !== undefined) {
+      const count = data.total;
+      const badge = document.getElementById('notifBadge');
+      if (count > 0) {
+        badge.innerText = count > 99 ? '99+' : count;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+  }
+
+  // Load daftar notifikasi untuk popup (dengan warna card)
+  async function loadNotifList() {
+    const data = await apiRequest('/notifikasi?limit=50');
+    if (!data) return;
+    const container = document.getElementById('notifContainer');
+    container.innerHTML = '';
+    if (!data.data?.length) {
+      container.innerHTML = '<div style="padding:12px;text-align:center">Tidak ada notifikasi</div>';
+      return;
+    }
+    data.data.forEach(n => {
+      const div = document.createElement('div');
+      const jenisClass = getJenisClass(n.jenis);
+      div.className = `notif-card ${jenisClass}`;
+      div.innerHTML = `<strong>${n.jenis.toUpperCase()}</strong><br>${escapeHtml(n.pesan)}<br><small>${new Date(n.waktu_dibuat).toLocaleString()}</small>`;
+      div.onclick = async () => {
+        await apiRequest(`/notifikasi/${n.id_pemberitahuan}/baca`, { method: 'PUT' });
+        div.remove();
+        loadNotifCount(); // update badge setelah ditandai baca
+        // jika setelah dihapus tidak ada notif, tampilkan pesan kosong
+        if (container.children.length === 0) {
+          container.innerHTML = '<div style="padding:12px;text-align:center">Tidak ada notifikasi</div>';
+        }
+      };
+      container.appendChild(div);
+    });
+  }
+
+  async function getLastPengurasan(idKolam) {
+    const data = await apiRequest(`/notifikasi?jenis=pengurasan&kolam_id=${idKolam}&limit=1`);
+    if (data?.data?.length) return new Date(data.data[0].waktu_dibuat).toLocaleString();
+    return null;
+  }
+
+  async function loadPerintahKolam(idKolam) {
+    try {
+      const data = await apiRequest(`/kolam/${idKolam}/perintah?limit=2`);
+      return Array.isArray(data) ? data : [];
+    } catch (e) { return []; }
+  }
+
+  async function updateKolamCard(card, kolam) {
+    const kadar = parseFloat(kolam.kadar_amonia_terakhir) || 0;
+    const batas = parseFloat(kolam.batasan_amonia) || 0;
+    const isBahaya = kadar > batas;
+    const isAuto = [true, 1, '1', 'true'].includes(kolam.pengurasan_otomatis);
+    const online = isOnline(kolam.waktu_amonia_terakhir);
+
+    card.querySelector('.kolam-title').innerText = kolam.nama_kolam;
+    card.querySelector('.kolam-value').innerHTML = `${kadar.toFixed(2)} PPM`;
+    card.querySelector('.kolam-value-limit').innerHTML = `Batas: ${batas.toFixed(2)} PPM`;
+
+    const badges = card.querySelectorAll('.badge-row .badge');
+    badges[0].className = `badge ${isBahaya ? 'bahaya' : 'aman'}`;
+    badges[0].innerText = isBahaya ? 'Bahaya' : 'Aman';
+    badges[1].className = `badge ${isAuto ? 'auto' : 'manual'}`;
+    badges[1].innerText = isAuto ? 'Auto' : 'Manual';
+    badges[2].className = `badge ${online ? 'online' : 'offline'}`;
+    badges[2].innerText = online ? 'Online' : 'Offline';
+
+    const lastKuras = await getLastPengurasan(kolam.id_kolam);
+    card.querySelector('.info-time').innerText = lastKuras || 'Belum pernah';
+
+    const pending = await apiRequest(`/kolam/${kolam.id_kolam}/perintah-pending`);
+    const spinnerDiv = card.querySelector('.pending-spinner');
+    if (pending?.length) {
+      spinnerDiv.classList.remove('hidden');
+      spinnerDiv.innerHTML = '⏳ Menunggu perintah dikerjakan... <span class="spinner"></span>';
+    } else {
+      spinnerDiv.classList.add('hidden');
+    }
+
+    const perintahList = await loadPerintahKolam(kolam.id_kolam);
+    const perintahDiv = card.querySelector('.perintah-card');
+    if (perintahList.length) {
+      perintahDiv.innerHTML = `
+        <div class="perintah-header"><span>📋 Perintah Terbaru</span></div>
+        ${perintahList.map(p => `
+          <div class="perintah-item">
+            <div><span class="warning">!</span> <strong>${escapeHtml(p.perintah)}</strong></div>
+            <div class="perintah-status">${formatStatusPerintah(p.status)}</div>
+          </div>
+        `).join('')}
+      `;
+    } else {
+      perintahDiv.innerHTML = '<div class="perintah-item" style="background:#f1f5f9; justify-content:center;">Tidak ada perintah</div>';
+    }
+
+    card.querySelector('.btn-atur').onclick = () => window.location.href = `atur-kolam.html?id=${kolam.id_kolam}`;
+  }
+
+  async function loadKolam() {
+    const data = await apiRequest('/dashboard');
+    if (!Array.isArray(data)) return;
+    const container = document.getElementById('kolamContainer');
+    const newIds = new Set(data.map(k => k.id_kolam));
+
+    for (const kolam of data) {
+      let card = kolamCards.get(kolam.id_kolam);
+      if (!card || !card.isConnected) {
+        const newCard = document.createElement('div');
+        newCard.className = 'kolam-card';
+        newCard.innerHTML = `
+          <button class="btn-atur">Atur</button>
+          <div class="kolam-title"></div>
+          <div class="kolam-value"></div>
+          <div class="kolam-value-limit"></div>
+          <div class="badge-row">
+            <div class="badge"></div>
+            <div class="badge"></div>
+            <div class="badge"></div>
+          </div>
+          <div class="info-box"><div class="info-title">🔄 Pengurasan Terakhir</div><div class="info-time"></div></div>
+          <div class="pending-spinner hidden"></div>
+          <div class="perintah-card"></div>
+        `;
+        container.appendChild(newCard);
+        kolamCards.set(kolam.id_kolam, newCard);
+        card = newCard;
+      }
+      await updateKolamCard(card, kolam);
+    }
+
+    for (let [id, card] of kolamCards.entries()) {
+      if (!newIds.has(id) && card.isConnected) {
+        card.remove();
+        kolamCards.delete(id);
+      }
+    }
+  }
+
+  // Event listeners
+  document.getElementById('navDashboard').addEventListener('click', () => window.location.href = 'dashboard.html');
+  document.getElementById('navHistory').addEventListener('click', () => window.location.href = 'history.html');
+  document.getElementById('bellIcon').addEventListener('click', async () => {
+    await loadNotifList();
+    document.getElementById('notifOverlay').classList.remove('hidden');
+  });
+  document.getElementById('settingIcon').addEventListener('click', () => window.location.href = 'settings.html');
+  document.getElementById('closeNotif').onclick = () => document.getElementById('notifOverlay').classList.add('hidden');
+  document.getElementById('navDashboard').classList.add('active');
+
+  loadUser();
+  loadKolam();
+  loadNotifCount(); // badge jumlah notif belum dibaca
+  setInterval(() => {
+    loadKolam();
+    loadNotifCount();
+  }, 2000);
+</script>
+</body>
+</html>

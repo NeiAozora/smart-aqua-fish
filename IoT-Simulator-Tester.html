@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>IoT Simulator Control Panel</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1e1e2f;
+            color: #eee;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #2d2d44;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        h2, h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #5a5a7a;
+            padding-bottom: 6px;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            border-radius: 8px;
+            border: none;
+            font-family: monospace;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button.danger {
+            background: #ef4444;
+        }
+        button.warning {
+            background: #eab308;
+            color: black;
+        }
+        .debug-area {
+            background: #0f0f1a;
+            border-radius: 12px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .flex-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .inline {
+            flex: 1;
+        }
+        hr {
+            border-color: #5a5a7a;
+            margin: 15px 0;
+        }
+        .badge {
+            background: #1e1e2f;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .status-ok { color: #4ade80; }
+        .status-error { color: #f87171; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🤖 IoT Simulator Control Panel</h1>
+    <p style="font-size:13px">Simulasi perangkat bodoh (dumb device) sesuai flowchart:<br>
+    ➤ Kirim data sensor setiap 30 detik (manual)<br>
+    ➤ Setiap 5 detik minta perintah ke server<br>
+    ➤ Terima perintah → Eksekusi (simulasi) → Kirim response</p>
+
+    <!-- Konfigurasi Device -->
+    <div class="card">
+        <h3>⚙️ Konfigurasi Device</h3>
+        <label>Device ID (harus terdaftar di kolam)</label>
+        <input type="text" id="deviceId" value="DEVICE_001" placeholder="contoh: DEVICE_001">
+        <label>API Base URL</label>
+        <input type="text" id="apiBase" value="http://localhost:8000/api">
+        <div class="flex-row" style="margin-top: 12px;">
+            <button id="setDeviceBtn" class="inline">✅ Set Device</button>
+            <button id="autoFetchToggle" class="warning inline">⏸️ Auto-Fetch Mati</button>
+        </div>
+        <div style="font-size:12px; margin-top:8px;">Status: <span id="deviceStatus">Belum diset</span></div>
+    </div>
+
+    <!-- Simulasi Sensor -->
+    <div class="card">
+        <h3>📡 Simulasi Sensor Amonia</h3>
+        <label>Kadar Amonia (ppm)</label>
+        <input type="number" id="amoniaValue" step="0.01" value="0.65">
+        <label>Waktu Record (kosong = now)</label>
+        <input type="datetime-local" id="recordedAt">
+        <button id="sendSensorBtn">📤 Kirim Data Sensor (POST /iot/sensor)</button>
+    </div>
+
+    <!-- Perintah & Response -->
+    <div class="card">
+        <h3>📟 Perintah & Respon</h3>
+        <button id="fetchCommandBtn">🔍 Ambil Perintah (GET /iot/command/{device_id})</button>
+        <div style="margin-top: 12px;" id="commandDisplay">
+            <div class="badge">Belum ada perintah diambil</div>
+        </div>
+        <hr>
+        <label>Simulasi Eksekusi Perintah</label>
+        <div class="flex-row">
+            <button id="responseOkBtn" class="inline">✅ OK (Berhasil)</button>
+            <button id="responseErrorBtn" class="inline danger">❌ ERROR (Gagal)</button>
+        </div>
+        <label>Pesan response opsional</label>
+        <input type="text" id="responseMessage" placeholder="Contoh: pompa menyala atau error detail">
+        <button id="sendResponseBtn" style="margin-top:10px;">📨 Kirim Response (POST /iot/response)</button>
+    </div>
+
+    <!-- Otomatisasi simulasi (opsional) -->
+    <div class="card">
+        <h3>⏱️ Otomatisasi (Loop Mock)</h3>
+        <div class="flex-row">
+            <button id="startAutoSensor" class="inline">▶️ Kirim sensor tiap 30dtk</button>
+            <button id="stopAutoSensor" class="inline danger">⏹️ Stop</button>
+        </div>
+        <div style="font-size:12px; margin-top:8px;">Interval aktif: <span id="autoSensorStatus">Tidak aktif</span></div>
+    </div>
+
+    <!-- Debug Log -->
+    <div class="card">
+        <h3>🐞 DEBUG LOG (Request/Response)</h3>
+        <div class="debug-area" id="debugLog">
+            [ready] IoT Simulator siap.
+        </div>
+        <button id="clearLogBtn" style="margin-top:10px; background:#555;">🧹 Clear Log</button>
+    </div>
+</div>
+
+<script>
+    // ======================== GLOBAL STATE ========================
+    let currentDeviceId = "DEVICE_001";
+    let apiBase = "http://localhost:8000/api";
+    let autoFetchInterval = null;       // untuk auto fetch perintah setiap 5 detik
+    let autoSensorInterval = null;      // untuk auto kirim sensor tiap 30 detik
+    let lastFetchedCommand = null;      // simpan command terakhir yang diambil (belum diresponse)
+    let isAutoFetchActive = false;
+
+    // Helper: log debug
+    function addDebugLog(text, isError = false) {
+        const logDiv = document.getElementById('debugLog');
+        const timestamp = new Date().toLocaleTimeString();
+        const prefix = isError ? '❌' : 'ℹ️';
+        const color = isError ? 'style="color:#f87171;"' : '';
+        const line = `<div ${color}>[${timestamp}] ${prefix} ${text}</div>`;
+        logDiv.insertAdjacentHTML('beforeend', line);
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // Generic request dengan log otomatis
+    async function apiRequest(endpoint, method, body = null, expectJson = true) {
+        const url = `${apiBase}${endpoint}`;
+        const options = {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+        if (body) options.body = JSON.stringify(body);
+        addDebugLog(`🌐 REQUEST: ${method} ${url} ${body ? JSON.stringify(body) : ''}`);
+        try {
+            const response = await fetch(url, options);
+            const responseText = await response.text();
+            let responseData;
+            if (expectJson) {
+                try {
+                    responseData = JSON.parse(responseText);
+                } catch(e) {
+                    responseData = { raw: responseText };
+                }
+            } else {
+                responseData = responseText;
+            }
+            addDebugLog(`✅ RESPONSE (${response.status}): ${JSON.stringify(responseData).substring(0, 300)}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return responseData;
+        } catch (err) {
+            addDebugLog(`❌ ERROR: ${err.message}`, true);
+            throw err;
+        }
+    }
+
+    // ======================== SENSOR ========================
+    async function sendSensor() {
+        const device = currentDeviceId;
+        if (!device) {
+            addDebugLog('Device ID belum diatur', true);
+            return;
+        }
+        const kadar = parseFloat(document.getElementById('amoniaValue').value);
+        if (isNaN(kadar)) {
+            addDebugLog('Kadar amonia tidak valid', true);
+            return;
+        }
+        let recordedAt = document.getElementById('recordedAt').value;
+        if (!recordedAt) recordedAt = new Date().toISOString();
+        else recordedAt = new Date(recordedAt).toISOString();
+
+        const payload = { device_id: device, kadar_amonia: kadar, recorded_at: recordedAt };
+        try {
+            await apiRequest('/iot/sensor', 'POST', payload);
+            addDebugLog(`Data sensor terkirim: ${kadar} ppm pada ${recordedAt}`);
+        } catch(e) {
+            addDebugLog(`Gagal kirim sensor: ${e.message}`, true);
+        }
+    }
+
+    // ======================== PERINTAH ========================
+    async function fetchCommand() {
+        const device = currentDeviceId;
+        if (!device) {
+            addDebugLog('Device ID tidak ada, tidak bisa ambil perintah', true);
+            return null;
+        }
+        try {
+            const result = await apiRequest(`/iot/command/${device}`, 'GET', null, true);
+            // Server merespon 204 jika tidak ada perintah -> result bisa null/empty
+            if (!result || (typeof result === 'object' && Object.keys(result).length === 0)) {
+                addDebugLog('Tidak ada perintah yang menunggu (204)');
+                document.getElementById('commandDisplay').innerHTML = '<div class="badge">Tidak ada perintah</div>';
+                lastFetchedCommand = null;
+                return null;
+            }
+            // response contoh: { command_id: 5, perintah: "kuras" }
+            if (result.command_id && result.perintah) {
+                lastFetchedCommand = result;
+                document.getElementById('commandDisplay').innerHTML = `
+                    <div class="badge" style="background:#3b82f6;">📟 Perintah: ${result.perintah} (ID: ${result.command_id})</div>
+                    <div style="margin-top:8px;">Status: <strong>pending</strong> - silakan kirim response</div>
+                `;
+                addDebugLog(`Perintah diterima: ${result.perintah} (id: ${result.command_id})`);
+                return result;
+            } else {
+                addDebugLog(`Respons tidak dikenali: ${JSON.stringify(result)}`, true);
+                return null;
+            }
+        } catch(e) {
+            addDebugLog(`Gagal mengambil perintah: ${e.message}`, true);
+            return null;
+        }
+    }
+
+    async function sendResponse(status, responseMessage) {
+        if (!lastFetchedCommand || !lastFetchedCommand.command_id) {
+            addDebugLog('Tidak ada perintah yang sedang diproses. Ambil perintah dulu.', true);
+            return;
+        }
+        const commandId = lastFetchedCommand.command_id;
+        const payload = {
+            command_id: commandId,
+            status: status,
+            response_message: responseMessage || (status === 'OK' ? 'Perintah berhasil dieksekusi' : 'Gagal eksekusi perintah')
+        };
+        try {
+            await apiRequest('/iot/response', 'POST', payload);
+            addDebugLog(`Response ${status} untuk command ${commandId} terkirim`);
+            // Clear command setelah response
+            lastFetchedCommand = null;
+            document.getElementById('commandDisplay').innerHTML = '<div class="badge">Belum ada perintah (sudah direspon)</div>';
+        } catch(e) {
+            addDebugLog(`Gagal kirim response: ${e.message}`, true);
+        }
+    }
+
+    // ======================== AUTO FETCH LOOP (setiap 5 detik) ========================
+    function startAutoFetch() {
+        if (autoFetchInterval) clearInterval(autoFetchInterval);
+        autoFetchInterval = setInterval(async () => {
+            if (!currentDeviceId) return;
+            addDebugLog('[Auto] Meminta perintah ke server...');
+            await fetchCommand();
+        }, 5000);
+        isAutoFetchActive = true;
+        document.getElementById('autoFetchToggle').innerHTML = '⏸️ Auto-Fetch Aktif';
+        document.getElementById('autoFetchToggle').style.background = '#ef4444';
+        addDebugLog('Auto-Fetch perintah diaktifkan (setiap 5 detik)');
+    }
+
+    function stopAutoFetch() {
+        if (autoFetchInterval) {
+            clearInterval(autoFetchInterval);
+            autoFetchInterval = null;
+        }
+        isAutoFetchActive = false;
+        document.getElementById('autoFetchToggle').innerHTML = '▶️ Auto-Fetch Mati';
+        document.getElementById('autoFetchToggle').style.background = '#3b82f6';
+        addDebugLog('Auto-Fetch perintah dimatikan');
+    }
+
+    function toggleAutoFetch() {
+        if (isAutoFetchActive) stopAutoFetch();
+        else startAutoFetch();
+    }
+
+    // ======================== AUTO SENSOR (tiap 30 detik) ========================
+    function startAutoSensor() {
+        if (autoSensorInterval) clearInterval(autoSensorInterval);
+        autoSensorInterval = setInterval(() => {
+            addDebugLog('[AutoSensor] Mengirim data sensor otomatis...');
+            sendSensor();
+        }, 30000);
+        document.getElementById('autoSensorStatus').innerText = 'Aktif (kirim tiap 30dtk)';
+        addDebugLog('Auto-sensor diaktifkan (30 detik)');
+    }
+
+    function stopAutoSensor() {
+        if (autoSensorInterval) {
+            clearInterval(autoSensorInterval);
+            autoSensorInterval = null;
+        }
+        document.getElementById('autoSensorStatus').innerText = 'Tidak aktif';
+        addDebugLog('Auto-sensor dimatikan');
+    }
+
+    // ======================== SET DEVICE ========================
+    function setDevice() {
+        const newDevice = document.getElementById('deviceId').value.trim();
+        const newApi = document.getElementById('apiBase').value.trim();
+        if (!newDevice) {
+            addDebugLog('Device ID tidak boleh kosong', true);
+            return;
+        }
+        currentDeviceId = newDevice;
+        apiBase = newApi;
+        localStorage.setItem('iot_device_id', currentDeviceId);
+        localStorage.setItem('iot_api_base', apiBase);
+        document.getElementById('deviceStatus').innerHTML = `Device: ${currentDeviceId} | API: ${apiBase}`;
+        addDebugLog(`Device diubah menjadi ${currentDeviceId}, API: ${apiBase}`);
+        // reset command yg lama karena device beda
+        lastFetchedCommand = null;
+        document.getElementById('commandDisplay').innerHTML = '<div class="badge">Device berubah, perintah sebelumnya dibatalkan</div>';
+    }
+
+    // ======================== INIT ========================
+    function loadStoredConfig() {
+        const savedDevice = localStorage.getItem('iot_device_id');
+        const savedApi = localStorage.getItem('iot_api_base');
+        if (savedDevice) {
+            currentDeviceId = savedDevice;
+            document.getElementById('deviceId').value = savedDevice;
+        }
+        if (savedApi) {
+            apiBase = savedApi;
+            document.getElementById('apiBase').value = savedApi;
+        }
+        setDevice(); // update tampilan
+    }
+
+    // event binding
+    document.getElementById('sendSensorBtn').onclick = sendSensor;
+    document.getElementById('fetchCommandBtn').onclick = fetchCommand;
+    document.getElementById('responseOkBtn').onclick = () => sendResponse('OK', document.getElementById('responseMessage').value);
+    document.getElementById('responseErrorBtn').onclick = () => sendResponse('ERROR', document.getElementById('responseMessage').value);
+    document.getElementById('sendResponseBtn').onclick = () => {
+        // pilih status default? lebih baik user klik OK/ERROR, tapi button ini bisa kirim dengan status dari dropdown atau default.
+        addDebugLog('Gunakan tombol OK/ERROR untuk menentukan status response', true);
+    };
+    document.getElementById('setDeviceBtn').onclick = setDevice;
+    document.getElementById('autoFetchToggle').onclick = toggleAutoFetch;
+    document.getElementById('startAutoSensor').onclick = startAutoSensor;
+    document.getElementById('stopAutoSensor').onclick = stopAutoSensor;
+    document.getElementById('clearLogBtn').onclick = () => {
+        document.getElementById('debugLog').innerHTML = '[log cleared]';
+        addDebugLog('Log dihapus');
+    };
+
+    loadStoredConfig();
+    // Auto-fetch default aktif? sesuai kebutuhan, biarkan mati dulu manual
+    addDebugLog('IoT Simulator siap. Atur device ID dan gunakan tombol.');
+    // Opsional: jika ingin auto fetch sejak awal, panggil startAutoFetch()
+</script>
+</body>
+</html>
