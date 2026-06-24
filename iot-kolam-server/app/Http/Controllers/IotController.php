@@ -58,30 +58,40 @@ public function ambilPerintah($deviceId)
     Log::info("Ambil perintah untuk device: {$deviceId}");
     $perintah = DB::table('perintah_device')
         ->where('device_id', $deviceId)
-        ->where('status', 'belum_dikirim')
+        ->where('status', "!=" ,['OK', 'ERROR'])
         ->orderBy('id', 'asc')
         ->first();
+
 
     if (!$perintah) {
         Log::info("Tidak ada perintah untuk device {$deviceId}");
         return response()->json(null, 204);
     }
 
-    $updated = DB::table('perintah_device')
-        ->where('id', $perintah->id)
-        ->where('status', 'belum_dikirim')
-        ->update(['status' => 'pending', 'updated_at' => now()]);
+    if ($perintah->status !="pending"){
+        $updated = DB::table('perintah_device')
+            ->where('id', $perintah->id)
+            ->where('status', 'belum_dikirim')
+            ->update(['status' => 'pending', 'updated_at' => now()]);
 
-    if (!$updated) {
-        Log::warning("Gagal update status perintah id {$perintah->id}, mungkin sudah berubah");
-        return response()->json(null, 204);
+        if (!$updated) {
+            Log::warning("Gagal update status perintah id {$perintah->id}, mungkin sudah berubah");
+            return response()->json(null, 204);
+        }
     }
+
+    // dd($perintah);
+
+
+
 
     Log::info("Perintah id {$perintah->id} diberikan ke device, status sekarang pending");
     return response()->json([
         'command_id' => $perintah->id,
         'perintah' => $perintah->perintah
     ]);
+
+    
 }
 
 

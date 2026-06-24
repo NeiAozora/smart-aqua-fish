@@ -10,6 +10,7 @@ class KolamController extends Controller
 {
     public function dashboard(Request $request)
     {
+
         $kolams = DB::table('kolam')
             ->where('id_user', 1)
             ->leftJoin('cache_kolam', 'kolam.id_kolam', '=', 'cache_kolam.id_kolam')
@@ -45,6 +46,8 @@ class KolamController extends Controller
     
     public function detail(Request $request, $id)
     {
+        IotHelper::processHeartbeat();
+
         $kolam = DB::table('kolam')
             ->where('id_kolam', $id)
             ->where('id_user', 1)

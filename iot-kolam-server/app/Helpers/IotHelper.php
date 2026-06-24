@@ -10,7 +10,7 @@ class IotHelper
     // ================================================================
     // PROPERTIES UNTUK TESTING / DEBUG
     // ================================================================
-    public static $testerMode = true;      // aktifkan mode tester (abaikan cooldown jika forceCooldown false)
+    public static $testerMode = false;      // aktifkan mode tester (abaikan cooldown jika forceCooldown false)
     public static $forceCooldown = false;   // jika true, tetap pakai cooldown normal (meski testerMode aktif)
     public static $coolDownTime = null;     // override cooldown (dalam menit), jika diisi maka nilai ini yang dipakai
     public static $noCooldown = false;      // jika true, NOTIFIKASI akan selalu dikirim (abaikan cooldown sama sekali)

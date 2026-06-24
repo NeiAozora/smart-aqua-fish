@@ -242,6 +242,7 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   opacity: 0.6;
+  width: 32px;
 }
 .nav-item.active {
   opacity: 1;
@@ -390,6 +391,11 @@ body {
       return;
     }
     data.data.forEach(n => {
+
+      if (n.dibaca = true){
+        return;
+      }
+
       const div = document.createElement('div');
       const jenisClass = getJenisClass(n.jenis);
       div.className = `notif-card ${jenisClass}`;
@@ -518,7 +524,9 @@ body {
     document.getElementById('notifOverlay').classList.remove('hidden');
   });
   document.getElementById('settingIcon').addEventListener('click', () => window.location.href = 'settings.html');
-  document.getElementById('closeNotif').onclick = () => document.getElementById('notifOverlay').classList.add('hidden');
+  document.getElementById('closeNotif').onclick = () => {
+    
+  }
   document.getElementById('navDashboard').classList.add('active');
 
   loadUser();
@@ -527,7 +535,7 @@ body {
   setInterval(() => {
     loadKolam();
     loadNotifCount();
-  }, 2000);
+  }, 5000);
 </script>
 </body>
 </html>

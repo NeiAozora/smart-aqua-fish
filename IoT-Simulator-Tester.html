@@ -250,12 +250,15 @@
         try {
             const result = await apiRequest(`/iot/command/${device}`, 'GET', null, true);
             // Server merespon 204 jika tidak ada perintah -> result bisa null/empty
-            if (!result || (typeof result === 'object' && Object.keys(result).length === 0)) {
+            if (Object.hasOwn(result, "raw") || !result || (typeof result === 'object' && Object.keys(result).length === 0)) {
                 addDebugLog('Tidak ada perintah yang menunggu (204)');
                 document.getElementById('commandDisplay').innerHTML = '<div class="badge">Tidak ada perintah</div>';
                 lastFetchedCommand = null;
                 return null;
             }
+
+
+            
             // response contoh: { command_id: 5, perintah: "kuras" }
             if (result.command_id && result.perintah) {
                 lastFetchedCommand = result;
