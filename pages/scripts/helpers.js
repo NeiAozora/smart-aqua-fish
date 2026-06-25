@@ -91,7 +91,7 @@ async function makeApiRequest(endpoint, options = {}) {
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  const fullUrl = endpoint.startsWith('http') ? endpoint : `https://ppl.neiaozora.my.id//api${endpoint}`;
+  const fullUrl = endpoint.startsWith('http') ? endpoint : `https://ppl.neiaozora.my.id/api${endpoint}`;
   const result = await makeRequest(fullUrl, { ...options, headers });
   
   // Jika result null karena HTML overwrite, hentikan

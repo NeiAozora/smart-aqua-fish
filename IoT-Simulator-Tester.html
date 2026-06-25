@@ -106,7 +106,7 @@
         <label>Device ID (harus terdaftar di kolam)</label>
         <input type="text" id="deviceId" value="DEVICE_001" placeholder="contoh: DEVICE_001">
         <label>API Base URL</label>
-        <input type="text" id="apiBase" value="https://ppl.neiaozora.my.id//api">
+        <input type="text" id="apiBase" value="https://ppl.neiaozora.my.id/api">
         <div class="flex-row" style="margin-top: 12px;">
             <button id="setDeviceBtn" class="inline">✅ Set Device</button>
             <button id="autoFetchToggle" class="warning inline">⏸️ Auto-Fetch Mati</button>
@@ -165,7 +165,7 @@
 <script>
     // ======================== GLOBAL STATE ========================
     let currentDeviceId = "DEVICE_001";
-    let apiBase = "https://ppl.neiaozora.my.id//api";
+    let apiBase = "https://ppl.neiaozora.my.id/api";
     let autoFetchInterval = null;       // untuk auto fetch perintah setiap 5 detik
     let autoSensorInterval = null;      // untuk auto kirim sensor tiap 30 detik
     let lastFetchedCommand = null;      // simpan command terakhir yang diambil (belum diresponse)

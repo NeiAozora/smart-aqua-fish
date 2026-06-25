@@ -325,7 +325,7 @@ body {
 </div>
 <script src="scripts/helpers.js"></script>
 <script>
-  const API_BASE = 'https://ppl.neiaozora.my.id//api';
+  const API_BASE = 'https://ppl.neiaozora.my.id/api';
   const kolamCards = new Map();
 
   async function apiRequest(endpoint, options = {}) {
@@ -383,7 +383,6 @@ body {
   // Load daftar notifikasi untuk popup (dengan warna card)
   async function loadNotifList() {
     const data = await apiRequest('/notifikasi?limit=50&dibaca=false');
-    console.log(data);
     if (!data) return;
     const container = document.getElementById('notifContainer');
     container.innerHTML = '';
