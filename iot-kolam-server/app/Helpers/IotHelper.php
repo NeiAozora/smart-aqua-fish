@@ -4,21 +4,22 @@ namespace App\Helpers;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class IotHelper
 {
     // ================================================================
     // PROPERTIES UNTUK TESTING / DEBUG
     // ================================================================
-    public static $testerMode = false;      // aktifkan mode tester (abaikan cooldown jika forceCooldown false)
-    public static $forceCooldown = false;   // jika true, tetap pakai cooldown normal (meski testerMode aktif)
-    public static $coolDownTime = null;     // override cooldown (dalam menit), jika diisi maka nilai ini yang dipakai
-    public static $noCooldown = false;      // jika true, NOTIFIKASI akan selalu dikirim (abaikan cooldown sama sekali)
+    public static $testerMode = false;
+    public static $forceCooldown = false;
+    public static $coolDownTime = null;     // override cooldown notifikasi (menit)
+    public static $noCooldown = false;
 
     public static function processHeartbeat()
     {
         Log::info('IoT Heartbeat started');
-        
+
         $kolams = DB::table('kolam')
             ->leftJoin('cache_kolam', 'kolam.id_kolam', '=', 'cache_kolam.id_kolam')
             ->select(['kolam.*', 'cache_kolam.kadar_amonia_terakhir', 'cache_kolam.waktu_amonia_terakhir'])
@@ -39,106 +40,128 @@ class IotHelper
 
         self::resetStuckCommands();
         self::cleanExpiredSessions();
-        
+
         Log::info('IoT Heartbeat finished');
     }
 
     public static function handleAmoniaExceed($kolam, $kadar, $now)
     {
         Log::info("Amonia exceed terdeteksi! Kolam: {$kolam->id_kolam}, Kadar: {$kadar}, Batas: {$kolam->batasan_amonia}");
-        
-        // ================================================================
-        // COOLDOWN NOTIFIKASI - DENGAN DUKUNGAN TESTER MODE & NOCOOLDOWN
-        // ================================================================
-        
-        // Cek apakah notifikasi tetap dikirim meskipun dalam cooldown
+
+        // ──────────── NOTIFIKASI ────────────
         $forceSendNotification = self::$noCooldown;
-        
         $lastNotif = DB::table('pemberitahuan')
             ->where('id_kolam', $kolam->id_kolam)
             ->where('jenis', 'amonia')
             ->orderBy('waktu_dibuat', 'desc')
             ->first();
 
-        // Tentukan nilai cooldown yang akan dipakai
         if (self::$testerMode && !self::$forceCooldown) {
-            // Mode testing: abaikan cooldown (anggap cooldown = 0)
             $effectiveCooldown = 0;
             Log::info("TESTER MODE: cooldown diabaikan untuk kolam {$kolam->id_kolam}");
         } else {
-            // Gunakan cooldown dari kolam, atau override jika coolDownTime diisi
             $effectiveCooldown = self::$coolDownTime ?? ($kolam->cooldown_menit ?? 30);
         }
 
         $canSendNotification = true;
-        
-        // Jika noCooldown aktif, maka abaikan pengecekan cooldown
         if (!$forceSendNotification && $lastNotif && $now->diffInMinutes($lastNotif->waktu_dibuat) < $effectiveCooldown) {
             $canSendNotification = false;
-            Log::info("Amonia exceed tapi masih cooldown ({$effectiveCooldown} menit) - tidak kirim notifikasi");
-        } else if ($forceSendNotification) {
-            Log::info("NOCOOLDOWN MODE: notifikasi tetap dikirim meskipun masih dalam cooldown");
+            Log::info("Amonia exceed tapi masih cooldown notifikasi ({$effectiveCooldown} menit)");
         }
 
         if ($canSendNotification) {
             DB::table('pemberitahuan')->insert([
-                'id_kolam' => $kolam->id_kolam,
-                'jenis' => 'amonia',
-                'pesan' => "Kadar amonia {$kadar} mg/L melebihi batas ({$kolam->batasan_amonia} mg/L)",
-                'dibaca' => false,
-                'waktu_dibuat' => $now,
-                'created_at' => $now,
-                'updated_at' => $now
+                'id_kolam'      => $kolam->id_kolam,
+                'jenis'         => 'amonia',
+                'pesan'         => "Kadar amonia {$kadar} mg/L melebihi batas ({$kolam->batasan_amonia} mg/L)",
+                'dibaca'        => false,
+                'waktu_dibuat'  => $now,
+                'created_at'    => $now,
+                'updated_at'    => $now
             ]);
             Log::info("Notifikasi amonia terkirim untuk kolam {$kolam->id_kolam}");
         }
 
-        // Perintah kuras tetap dibuat (tidak terpengaruh cooldown notifikasi)
+        // ──────────── PERINTAH KURAS ────────────
         if ($kolam->pengurasan_otomatis && $kolam->device_id) {
             self::buatPerintahKuras($kolam->device_id, $kolam->id_kolam, 'otomatis', $now);
         }
     }
 
+    /**
+     * Buat perintah kuras baru jika:
+     * - Tidak ada perintah kuras yang sedang berjalan (belum_dikirim / pending / proses)
+     * - Cooldown dari perintah terakhir sudah lewat
+     */
     public static function buatPerintahKuras($deviceId, $idKolam, $sumber, $now)
     {
-        // Cek apakah sudah ada perintah kuras yang belum selesai (belum_dikirim atau pending)
+        // 1. Cegah duplikasi perintah yang belum final
         $existing = DB::table('perintah_device')
             ->where('device_id', $deviceId)
             ->where('perintah', 'kuras')
-            ->whereIn('status', ['belum_dikirim', 'pending'])
+            ->whereIn('status', ['belum_dikirim', 'pending', 'proses'])
             ->first();
 
         if ($existing) {
-            Log::info("Perintah kuras untuk device {$deviceId} sudah ada (status {$existing->status}), skip buat baru");
+            Log::info("Masih ada perintah kuras aktif (status {$existing->status}) untuk {$deviceId}, tidak buat baru");
             return;
         }
 
+        // 2. Periksa cooldown dari perintah terakhir yang sudah final (OK/ERROR)
+        $lastFinal = DB::table('perintah_device')
+            ->where('device_id', $deviceId)
+            ->where('perintah', 'kuras')
+            ->whereIn('status', ['OK', 'ERROR'])
+            ->orderBy('responded_at', 'desc')
+            ->first();
+
+        if ($lastFinal && $lastFinal->responded_at) {
+            $cooldownSeconds = 0;
+
+            // Coba ambil angka cooldown dari response_message (format "Cooldown:XX")
+            if ($lastFinal->response && preg_match('/Cooldown:(\d+)/', $lastFinal->response, $matches)) {
+                $cooldownSeconds = (int) $matches[1];
+            } else {
+                // Fallback: jika tidak ada teks cooldown, pakai 60 detik (atau ambil dari kolam)
+                $cooldownSeconds = 60; // bisa diganti dengan $kolam->cooldown_kuras_detik ?? 60
+            }
+
+            $cooldownUntil = Carbon::parse($lastFinal->responded_at)->addSeconds($cooldownSeconds);
+
+            if ($now->lessThan($cooldownUntil)) {
+                Log::info("Cooldown kuras untuk {$deviceId} sampai {$cooldownUntil}, skip");
+                return;
+            }
+        }
+
+        // 3. Aman, buat perintah baru
         DB::table('perintah_device')->insert([
-            'device_id' => $deviceId,
-            'perintah' => 'kuras',
-            'status' => 'belum_dikirim',
+            'device_id'  => $deviceId,
+            'perintah'   => 'kuras',
+            'status'     => 'belum_dikirim',
             'created_at' => $now,
             'updated_at' => $now
         ]);
 
         DB::table('pemberitahuan')->insert([
-            'id_kolam' => $idKolam,
-            'jenis' => 'pengurasan',
-            'pesan' => "Perintah kuras ({$sumber}) telah dikirim ke device",
-            'dibaca' => false,
-            'waktu_dibuat' => $now,
-            'created_at' => $now,
-            'updated_at' => $now
+            'id_kolam'      => $idKolam,
+            'jenis'         => 'pengurasan',
+            'pesan'         => "Perintah kuras ({$sumber}) telah dikirim ke device",
+            'dibaca'        => false,
+            'waktu_dibuat'  => $now,
+            'created_at'    => $now,
+            'updated_at'    => $now
         ]);
-        
+
         Log::info("Perintah kuras baru dibuat untuk device {$deviceId} via {$sumber}");
     }
 
     private static function resetStuckCommands()
     {
+        // Reset perintah yang 'pending' atau 'proses' tapi tidak ada heartbeat selama 2 menit
         $timeout = now()->subMinutes(2);
         $updated = DB::table('perintah_device')
-            ->where('status', 'pending')
+            ->whereIn('status', ['pending', 'proses'])
             ->where('updated_at', '<', $timeout)
             ->update(['status' => 'belum_dikirim', 'updated_at' => now()]);
 

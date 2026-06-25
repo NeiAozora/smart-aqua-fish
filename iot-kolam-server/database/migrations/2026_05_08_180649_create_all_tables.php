@@ -8,6 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
+
+        // Tabel sessions (Laravel default)
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->text('payload');
+            $table->integer('last_activity')->index();
+        });
+
         // Tabel users
         Schema::create('users', function (Blueprint $table) {
             $table->id('id_user');
@@ -58,7 +69,7 @@ return new class extends Migration
             $table->id();
             $table->string('device_id', 50);
             $table->string('perintah', 50);
-            $table->enum('status', ['belum_dikirim', 'pending', 'OK', 'ERROR'])->default('belum_dikirim');
+            $table->enum('status', ['belum_dikirim', 'pending', "proses" , 'OK', 'ERROR'])->default('belum_dikirim');
             $table->text('response')->nullable();
             $table->timestamp('responded_at')->nullable();
             $table->timestamps();

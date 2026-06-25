@@ -68,7 +68,7 @@ public function ambilPerintah($deviceId)
         return response()->json(null, 204);
     }
 
-    if ($perintah->status !="pending"){
+    if ($perintah->status !="pending" || $perintah->status !="proses"){
         $updated = DB::table('perintah_device')
             ->where('id', $perintah->id)
             ->where('status', 'belum_dikirim')
@@ -102,7 +102,7 @@ public function ambilPerintah($deviceId)
     {
         $request->validate([
             'command_id'       => 'required|integer|exists:perintah_device,id',
-            'status'           => 'required|in:OK,ERROR',
+            'status'           => 'required|in:OK,ERROR,proses',
             'response_message' => 'nullable|string'
         ]);
 

@@ -6,6 +6,9 @@ use App\Http\Controllers\KolamController;
 use App\Http\Controllers\NotifikasiController;
 use Illuminate\Support\Facades\Route;
 
+
+
+
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::post('/iot/sensor', [IotController::class, 'terimaSensor']);
