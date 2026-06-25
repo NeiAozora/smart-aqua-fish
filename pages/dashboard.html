@@ -366,52 +366,32 @@ body {
   }
 
   // Load jumlah notifikasi belum dibaca
-  async function loadNotifCount() {
-    const data = await apiRequest('/notifikasi?dibaca=false&limit=1');
-    if (data && data.total !== undefined) {
-      const count = data.total;
-      const badge = document.getElementById('notifBadge');
-      if (count > 0) {
-        badge.innerText = count > 99 ? '99+' : count;
-        badge.classList.remove('hidden');
-      } else {
-        badge.classList.add('hidden');
-      }
-    }
+async function loadNotifList() {
+  const data = await apiRequest('/notifikasi?limit=50&dibaca=false');
+  if (!data) return;
+  const container = document.getElementById('notifContainer');
+  container.innerHTML = '';
+  if (!data.data?.length) {
+    container.innerHTML = '<div style="padding:12px;text-align:center">Tidak ada notifikasi</div>';
+    return;
   }
-
-  // Load daftar notifikasi untuk popup (dengan warna card)
-  async function loadNotifList() {
-    const data = await apiRequest('/notifikasi?limit=50&dibaca=false');
-    if (!data) return;
-    const container = document.getElementById('notifContainer');
-    container.innerHTML = '';
-    if (!data.data?.length) {
-      container.innerHTML = '<div style="padding:12px;text-align:center">Tidak ada notifikasi</div>';
-      return;
-    }
-    data.data.forEach(n => {
-
-      if (n.dibaca = true){
-        return;
+  data.data.forEach(n => {
+    // (blok "if (n.dibaca = true) return;" DIHAPUS)
+    const div = document.createElement('div');
+    const jenisClass = getJenisClass(n.jenis);
+    div.className = `notif-card ${jenisClass}`;
+    div.innerHTML = `<strong>${n.jenis.toUpperCase()}</strong><br>${escapeHtml(n.pesan)}<br><small>${new Date(n.waktu_dibuat).toLocaleString()}</small>`;
+    div.onclick = async () => {
+      await apiRequest(`/notifikasi/${n.id_pemberitahuan}/baca`, { method: 'PUT' });
+      div.remove();
+      loadNotifCount();
+      if (container.children.length === 0) {
+        container.innerHTML = '<div style="padding:12px;text-align:center">Tidak ada notifikasi</div>';
       }
-
-      const div = document.createElement('div');
-      const jenisClass = getJenisClass(n.jenis);
-      div.className = `notif-card ${jenisClass}`;
-      div.innerHTML = `<strong>${n.jenis.toUpperCase()}</strong><br>${escapeHtml(n.pesan)}<br><small>${new Date(n.waktu_dibuat).toLocaleString()}</small>`;
-      div.onclick = async () => {
-        await apiRequest(`/notifikasi/${n.id_pemberitahuan}/baca`, { method: 'PUT' });
-        div.remove();
-        loadNotifCount(); // update badge setelah ditandai baca
-        // jika setelah dihapus tidak ada notif, tampilkan pesan kosong
-        if (container.children.length === 0) {
-          container.innerHTML = '<div style="padding:12px;text-align:center">Tidak ada notifikasi</div>';
-        }
-      };
-      container.appendChild(div);
-    });
-  }
+    };
+    container.appendChild(div);
+  });
+}
 
   async function getLastPengurasan(idKolam) {
     const data = await apiRequest(`/notifikasi?jenis=pengurasan&kolam_id=${idKolam}&limit=1`);
@@ -525,8 +505,8 @@ body {
   });
   document.getElementById('settingIcon').addEventListener('click', () => window.location.href = 'settings.html');
   document.getElementById('closeNotif').onclick = () => {
-    
-  }
+    document.getElementById('notifOverlay').classList.add('hidden');
+  };
   document.getElementById('navDashboard').classList.add('active');
 
   loadUser();
